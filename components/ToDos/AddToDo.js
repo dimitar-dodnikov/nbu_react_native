@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Button, TextInput, View, StyleSheet } from "react-native";
+import { Button, TextInput, View, StyleSheet, Keyboard } from "react-native";
 
 const AddToDo = ({ onAddToDo }) => {
 	const [text, setText] = useState("");
@@ -9,6 +9,7 @@ const AddToDo = ({ onAddToDo }) => {
 		if (text !== "") {
 			onAddToDo(text);
 			setText("");
+			Keyboard.dismiss();
 		}
 	};
 

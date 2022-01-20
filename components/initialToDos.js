@@ -1,12 +1,12 @@
 const initialToDos = [
 	{
-		id: 1,
+		id: 5,
 		text: "Do laundry",
 		checked: false,
 		createdAt: new Date().toISOString(),
 	},
 	{
-		id: 2,
+		id: 4,
 		text: "Do homework",
 		checked: false,
 		createdAt: new Date().toISOString(),
@@ -18,13 +18,13 @@ const initialToDos = [
 		createdAt: new Date().toISOString(),
 	},
 	{
-		id: 4,
+		id: 2,
 		text: "Finish puzzle",
 		checked: false,
 		createdAt: new Date().toISOString(),
 	},
 	{
-		id: 5,
+		id: 1,
 		text: "Feed the dog",
 		checked: false,
 		createdAt: new Date().toISOString(),

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import {
 	StyleSheet,
@@ -9,83 +9,115 @@ import {
 	Text,
 } from "react-native";
 
-import FlashMessage from "react-native-flash-message";
+import { useIsFocused } from "@react-navigation/native";
+
 import { showMessage } from "react-native-flash-message";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import AddToDo from "./AddToDo";
 import Header from "./Header";
 import ToDoListItem from "./ToDoListItem";
 
-import initialToDos from "../initialToDos";
+const ToDos = ({ navigation, route }) => {
+	const isFocused = useIsFocused();
 
-let id = initialToDos[initialToDos.length - 1].id;
-
-const ToDos = ({ navigation }) => {
-	const [toDos, setToDos] = useState(initialToDos);
+	const [toDos, setToDos] = useState([]);
 	const [modal, setModal] = useState({ visible: false, toDo: {} });
+
+	useEffect(() => {
+		if (isFocused) {
+			AsyncStorage.getItem("toDos").then((localStorageToDos) => {
+				const data = JSON.parse(localStorageToDos);
+				if (route.params.toBeDeleted) {
+					const el = data.find((el) => el.id === route.params.toBeDeleted);
+					if (el !== null && el !== undefined) {
+						el.toBeDeleted = true;
+					}
+				}
+				setToDos(data);
+			});
+		}
+	}, [isFocused]);
 
 	// add TODO
 	const addTodo = (text) => {
-		setToDos((oldTodos) => [
-			...oldTodos,
-			{
-				id: ++id,
+		AsyncStorage.getItem("toDos").then((result) => {
+			const localStorageToDos = JSON.parse(result);
+			const newToDo = {
+				id: localStorageToDos[0].id + 1,
 				text: text,
 				checked: false,
 				createdAt: new Date().toISOString(),
-			},
-		]);
+				toBeDeleted: false,
+			};
+			localStorageToDos.unshift(newToDo);
+			AsyncStorage.setItem("toDos", JSON.stringify(localStorageToDos)).then(
+				() => {
+					setToDos((oldTodos) => [newToDo, ...oldTodos]);
 
-		showMessage({
-			message: "Added TODO: " + text,
-			type: "success",
+					showMessage({
+						message: "Added TODO: " + text,
+						type: "success",
+					});
+				}
+			);
 		});
 	};
 
 	// remove TODO
 	const deleteToDohandler = (id) => {
-		const text = toDos.find((toDo) => toDo.id === id).text;
+		AsyncStorage.getItem("toDos").then((result) => {
+			const text = toDos.find((toDo) => toDo.id === id).text;
 
-		setToDos((oldTodos) => {
-			const newToDos = oldTodos.filter((todo) => todo.id !== id);
-			return newToDos;
-		});
+			const localStorageToDos = JSON.parse(result).filter(
+				(obj) => obj.id !== id
+			);
 
-		showMessage({
-			message: "Deleted TODO: " + text,
-			type: "danger",
+			AsyncStorage.setItem("toDos", JSON.stringify(localStorageToDos)).then(
+				() => {
+					setToDos(localStorageToDos);
+
+					showMessage({
+						message: "Deleted TODO: " + text,
+						type: "danger",
+					});
+				}
+			);
 		});
 	};
 
 	// Handle checked todo
-	const toggleTodoState = (id) => {
-		const toDo = toDos.find((toDo) => toDo.id === id);
-		const text = toDo.text;
-		const checked = toDo.checked;
+	const toggleToDoState = (id) => {
+		AsyncStorage.getItem("toDos").then((result) => {
+			const toDo = toDos.find((toDo) => toDo.id === id);
+			const text = toDo.text;
+			const checked = toDo.checked;
 
-		setToDos((oldTodos) => {
-			const newToDos = oldTodos.map((oldTodo) => {
-				if (oldTodo.id !== id) return { ...oldTodo };
-				return {
-					id: oldTodo.id,
-					text: oldTodo.text,
-					checked: !oldTodo.checked,
-				};
-			});
-			return newToDos;
-		});
+			const localStorageToDos = JSON.parse(result);
+			const localStorageToDo = localStorageToDos.find((obj) => obj.id === id);
+			localStorageToDo.checked = !checked;
 
-		showMessage({
-			message: (checked ? "Unchecked" : "Checked") + " TODO: " + text,
-			type: "info",
+			AsyncStorage.setItem("toDos", JSON.stringify(localStorageToDos)).then(
+				() => {
+					setToDos(localStorageToDos);
+
+					showMessage({
+						message: (checked ? "Unchecked" : "Checked") + " TODO: " + text,
+						type: "info",
+					});
+				}
+			);
 		});
 	};
 
 	return (
 		<View style={[toDosStyles.fill, toDosStyles.AppContainer]}>
 			<Header
-				totalCount={toDos.length}
-				totalUncheckedCount={toDos.filter((toDo) => !toDo.checked).length}
+				totalCount={toDos?.length || 0}
+				totalUncheckedCount={
+					toDos?.filter((toDo) => !toDo.checked)?.length || 0
+				}
 			></Header>
 			<AddToDo onAddToDo={addTodo}></AddToDo>
 			<ScrollView style={toDosStyles.fill}>
@@ -94,7 +126,7 @@ const ToDos = ({ navigation }) => {
 						navigation={navigation}
 						toDo={toDo}
 						onDelete={() => deleteToDohandler(toDo.id)}
-						onToggle={() => toggleTodoState(toDo.id)}
+						onToggle={() => toggleToDoState(toDo.id)}
 						onLongPress={() => {
 							setModal({ visible: true, toDo: toDo });
 						}}
@@ -117,7 +149,11 @@ const ToDos = ({ navigation }) => {
 						<Pressable
 							style={[toDosStyles.button, toDosStyles.buttonDelete]}
 							onPress={() => {
-								deleteToDohandler(modal.toDo.id);
+								setToDos((oldData) => {
+									const data = [...oldData];
+									data.find((el) => el.id === modal.toDo.id).toBeDeleted = true;
+									return data;
+								});
 								setModal({ visible: false, toDo: {} });
 							}}
 						>
@@ -127,7 +163,7 @@ const ToDos = ({ navigation }) => {
 						<Pressable
 							style={[toDosStyles.button, toDosStyles.buttonCheck]}
 							onPress={() => {
-								toggleTodoState(modal.toDo.id);
+								toggleToDoState(modal.toDo.id);
 								setModal({ visible: false, toDo: {} });
 							}}
 						>
@@ -155,7 +191,6 @@ const ToDos = ({ navigation }) => {
 					</View>
 				</View>
 			</Modal>
-			<FlashMessage position="top" />
 		</View>
 	);
 };

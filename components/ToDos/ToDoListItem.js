@@ -65,13 +65,6 @@ const ToDoListItem = ({
 						<Button
 							title="Delete"
 							onPress={() => {
-								// Animated.timing(new Animated.Value(0), {
-								// 	toValue: 1,
-								// 	duration: 500,
-								// 	useNativeDriver: true,
-								// }).start(() => {
-								// 	onDelete();
-								// });
 								setToBeDeleted(true);
 							}}
 						/>

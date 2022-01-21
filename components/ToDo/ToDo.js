@@ -35,24 +35,6 @@ const ToDo = ({ navigation, route }) => {
 	// remove TODO
 	const deleteToDohandler = () => {
 		navigation.navigate("ToDos", { toBeDeleted: toDo.id });
-		// AsyncStorage.getItem("toDos").then((result) => {
-		// 	const text = toDo.text;
-
-		// 	const localStorageToDos = JSON.parse(result).filter(
-		// 		(obj) => obj.id !== toDo.id
-		// 	);
-
-		// 	AsyncStorage.setItem("toDos", JSON.stringify(localStorageToDos)).then(
-		// 		() => {
-		// 			navigation.navigate("ToDos", { toBeDeleted: toDo.id });
-
-		// 			showMessage({
-		// 				message: "Deleted TODO: " + text,
-		// 				type: "danger",
-		// 			});
-		// 		}
-		// 	);
-		// });
 	};
 
 	return (
